@@ -2,6 +2,7 @@ from http.client import HTTPException
 from typing import Optional
 
 from fastapi import APIRouter, Depends, UploadFile, Form, Response
+from fastapi.responses import JSONResponse
 from ..models.ids_base import IDSBase
 from .dependencies import get_ids_instance
 from ..general_utilities import save_file
@@ -12,15 +13,15 @@ router = APIRouter()
 
 @router.get("/healthcheck")
 async def healthcheck():
-    return {"message": "healthy"}
+    return JSONResponse({"message": "healthy"}, status_code = 200)
 
 
 # TODO 10: send status codeds and response objects every time
 
 @router.post("/configuration")
-async def test(container_id: str = Form(...) , file: UploadFile = Form(...)  ,ids: IDSBase = Depends(get_ids_instance)):
+async def configure(container_id: str = Form(...) , file: UploadFile = Form(...)  ,ids: IDSBase = Depends(get_ids_instance)):
     if file is None:
-        raise HTTPException(status_code=400, detail="No file provided")
+        return JSONResponse({"error": "No file provided"}, status_code = 400)
     
     # initialize container id variable to keep track which container is associated with the ids instance
     ids.container_id = int(container_id)
@@ -28,7 +29,7 @@ async def test(container_id: str = Form(...) , file: UploadFile = Form(...)  ,id
     temporary_file_path = "/tmp/temporary.txt"
     await save_file(file, temporary_file_path)
     response = await ids.configure(temporary_file_path)
-    return {"message": response}
+    return JSONResponse({"message": response}, status_code = 200)
 
 @router.post("/configure/ensemble/add/{ensemble_id}")
 async def add_to_ensemble(ensemble_id: int, ids: IDSBase = Depends(get_ids_instance)):
