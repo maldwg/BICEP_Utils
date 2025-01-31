@@ -1,0 +1,28 @@
+name: Testing of the BICEP utilities
+on:
+    pull_request:
+        types: opened
+        branches: main
+    push:
+jobs:
+    test_and_upload:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  submodules: 'true'
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: 3.12
+
+            - name: install requirements from main repo
+              run: pip3 install -r https://raw.githubusercontent.com/maldwg/BICEP/refs/heads/main/backend/core/requirements.txt
+
+            - name: execute bicep-utils tests
+              run: pytest ./tests --cov-branch --cov-report=xml --cov
+
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v5
