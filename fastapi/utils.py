@@ -41,7 +41,6 @@ async def send_alerts_to_core(ids):
     core_url = await get_env_variable("CORE_URL")
     alerts: list[Alert] = await ids.parser.parse_alerts(ANALYSIS_MODES.STATIC.value)
     json_alerts = [ a.to_dict() for a in alerts] 
-
     data = {"container_id": ids.container_id, "ensemble_id": ids.ensemble_id, "alerts": json_alerts, "analysis_type": "static", "dataset_id": ids.dataset_id}
     async with httpx.AsyncClient() as client:
         # set timeout to 90, to be able to send all alerts
@@ -55,6 +54,7 @@ async def send_alerts_to_core(ids):
 
 
 # TODO 0: adjust to 300 secodns
+# TODO 0: cant this be includd in the router itself ? has it to be done in each impleemented image ? --> goal reduce dependency knowledge
 async def send_alerts_to_core_periodically(ids, period: float=60):
     try:
         if ids.ensemble_id == None:
