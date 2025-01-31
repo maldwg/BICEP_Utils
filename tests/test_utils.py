@@ -3,7 +3,6 @@ import json
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
 from httpx import Response
-from BICEP_Utils.fastapi.utils import tell_core_analysis_has_finished, send_alerts_to_core, send_alerts_to_core_periodically
 from BICEP_Utils.models.ids_base import Alert, IDSParser, IDSBase
 
 @pytest.fixture
@@ -41,13 +40,36 @@ def mock_alert_list():
     return [alert1,alert2,alert3]
 
 
+
+class MockIDS(IDSBase):
+        async def parser(self):
+            pass
+
+        async def log_location(self):
+            pass
+
+        async def configuration_location(self):
+            pass
+
+        async def configure(self, file_path):
+            pass
+
+        async def configure_ruleset(self, file_path):
+            pass
+
+        async def execute_static_analysis_command(self, file_path: str):
+            pass
+
+        async def execute_network_analysis_command(self):
+            pass  
+
 @pytest.fixture
 def mock_ids(mock_alert_list):
     mock_parser = MagicMock(spec=IDSParser)
     mock_parser.parse_alerts = AsyncMock() 
     mock_parser.parse_alerts.return_value = mock_alert_list
 
-    mock = AsyncMock(spec=IDSBase)
+    mock = MockIDS()
     mock.container_id = 1
     mock.ensemble_id = None
     mock.configure = AsyncMock(return_value="Test")
@@ -57,51 +79,51 @@ def mock_ids(mock_alert_list):
     return mock
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_tell_core_analysis_has_finished_for_ensemble(mock_post, mock_get_env_variable, mock_ids):
+async def test_tell_core_analysis_has_finished_for_ensemble(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
     mock_ids.ensemble_id = 1
-    response = await tell_core_analysis_has_finished(mock_ids)
+    response = await mock_ids.tell_core_analysis_has_finished()
     
     assert response.status_code == 200
     assert mock_ids.ensemble_id == None
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_tell_core_analysis_has_finished(mock_post, mock_get_env_variable, mock_ids):
+async def test_tell_core_analysis_has_finished(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
     
-    response = await tell_core_analysis_has_finished(mock_ids)
+    response = await mock_ids.tell_core_analysis_has_finished()
     
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_send_alerts_to_core(mock_post, mock_get_env_variable, mock_ids):
+async def test_send_alerts_to_core(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
     mock_ids.dataset_id = 1
-    response = await send_alerts_to_core(mock_ids)
+    response = await mock_ids.send_alerts_to_core()
     
     assert response.status_code == 200
     assert mock_ids.dataset_id == None
     mock_post.assert_called_once()
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_send_alerts_to_core_ensemble(mock_post, mock_get_env_variable, mock_ids):
+async def test_send_alerts_to_core_ensemble(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
     mock_ids.dataset_id = 1
     mock_ids.ensemble_id = 1
-    response = await send_alerts_to_core(mock_ids)
+    response = await mock_ids.send_alerts_to_core()
     
     assert response.status_code == 200
     assert mock_ids.dataset_id == None
@@ -109,13 +131,13 @@ async def test_send_alerts_to_core_ensemble(mock_post, mock_get_env_variable, mo
 
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_send_alerts_to_core_periodically(mock_post, mock_get_env_variable, mock_ids):
+async def test_send_alerts_to_core_periodically(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
 
-    task = asyncio.create_task(send_alerts_to_core_periodically(mock_ids, period=1))
+    task = asyncio.create_task(mock_ids.send_alerts_to_core_periodically(period=1))
     await asyncio.sleep(2)
     task.cancel()
     
@@ -123,13 +145,13 @@ async def test_send_alerts_to_core_periodically(mock_post, mock_get_env_variable
 
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_send_alerts_to_core_periodically_ensemble(mock_post, mock_get_env_variable, mock_ids):
+async def test_send_alerts_to_core_periodically_ensemble(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     mock_post.return_value = Response(200, json={"status": "success"})
     mock_ids.ensemble_id = 1
-    task = asyncio.create_task(send_alerts_to_core_periodically(mock_ids, period=1))
+    task = asyncio.create_task(mock_ids.send_alerts_to_core_periodically(period=1))
     await asyncio.sleep(2)
     task.cancel()
     
@@ -137,14 +159,14 @@ async def test_send_alerts_to_core_periodically_ensemble(mock_post, mock_get_env
 
 
 @pytest.mark.asyncio
-@patch("BICEP_Utils.fastapi.utils.get_env_variable", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-async def test_send_alerts_to_core_periodically_exception(mock_post, mock_get_env_variable, mock_ids):
+async def test_send_alerts_to_core_periodically_exception(mock_post, mock_get_env_variable, mock_ids: MockIDS):
     mock_get_env_variable.return_value = "http://core-url"
     # First call raises an exception, second call returns a mock response
     mock_post.side_effect = [Exception("Oh no, something went wrong"), MagicMock(status_code=200)]
     mock_ids.ensemble_id = 1
-    task = asyncio.create_task(send_alerts_to_core_periodically(mock_ids, period=1))
+    task = asyncio.create_task(mock_ids.send_alerts_to_core_periodically(period=1))
     # Ensure at least two iterations run
     await asyncio.sleep(2.5)  
     task.cancel()
