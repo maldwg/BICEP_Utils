@@ -20,8 +20,15 @@ The IDS components are depending on the implementation of the interfaces provide
 The following solutions are either planned or already implemented
 
 
-| IDS Solution | Docker Image | Link | Status |
+| IDS Solution | Docker Image | GitHub Repository | Status |
 |-------------|-------------|------|--------|
-| Slips       | `maxldwg/bicep-slips` | [Slips implementation](https://github.com/maldwg/BICEP-slips-image) | ✅ Available |
-| Suricata    | `maxldwg/bicep-suricata` | [Suricata implementation](https://github.com/maldwg/BICEP-suricata-image) | ✅ Available |
+| Slips       | ![Slips-Image] | [Slips implementation](https://github.com/maldwg/BICEP-slips-image) | ✅ Available |
+| Suricata    | ![Suricata-Image] | [Suricata implementation](https://github.com/maldwg/BICEP-suricata-image) | ✅ Available |
 | Snort       | `-` | `-` |  🕒 Planned  |
+
+
+
+[Slips-Image]: https://img.shields.io/docker/v/maxldwg/bicep-slips/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-slips
+
+
+[Suricata-Image]: https://img.shields.io/docker/v/maxldwg/bicep-suricata/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
