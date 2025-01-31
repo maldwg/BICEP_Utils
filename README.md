@@ -1,8 +1,7 @@
 <div align="center">
 
-<img alt="Codecov" src="https://img.shields.io/codecov/c/github/maldwg/BICEP-utils?style=for-the-badge">
-<img alt="GitHub branch status" src="https://img.shields.io/github/checks-status/maldwg/BICEP-utils/main?style=for-the-badge&label=Tests">
-
+<img alt="Codecov" src="https://img.shields.io/codecov/c/github/maldwg/BICEP_Utils?style=for-the-badge">
+<img alt="GitHub branch status" src="https://img.shields.io/github/checks-status/maldwg/BICEP_Utils/main?style=for-the-badge&label=Tests">
 
 </div>
 
