@@ -27,8 +27,9 @@ def mock_ids():
     mock = AsyncMock(spec=IDSBase)
     mock.container_id = 1
     mock.ensemble_id = None
-    mock.configure = AsyncMock(return_value="Test")
+    mock.configure = AsyncMock(return_value="Succesfully configured")
     mock.startNetworkAnalysis = AsyncMock(return_value="Started Network Analysis")
+    mock.configure_ruleset = AsyncMock(return_value = "Succesfully configured Ruleset")
     return mock
 
 @pytest.mark.asyncio
@@ -57,6 +58,24 @@ async def test_configuration_file_is_none(mock_ids):
     assert response.status_code == 400
     assert response_json == {"error": "No file provided"}
     
+@patch("BICEP_Utils.fastapi.routes.save_file")
+@pytest.mark.asyncio
+async def test_ruleset(save_file_mock, mock_ids):
+    mock_file = MagicMock(spec=UploadFile)
+    response = await ruleset(file=mock_file,ids=mock_ids)
+    response_json = json.loads(response.body.decode())
+    assert response.status_code == 200
+    assert response_json == {'message': mock_ids.configure_ruleset.return_value}
+    
+@pytest.mark.asyncio
+async def test_ruleset_file_is_none(mock_ids):
+    mock_file = None
+    response = await ruleset(file=mock_file,ids=mock_ids)
+    response_json = json.loads(response.body.decode())
+    assert response.status_code == 400
+    assert response_json == {"error": "No file provided"}
+    
+
 @pytest.mark.asyncio
 async def test_add_to_ensemble_with_incorrect_id(mock_ids):
     response = await add_to_ensemble(ensemble_id=mock_ids.ensemble_id, ids=mock_ids)

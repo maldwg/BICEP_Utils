@@ -46,14 +46,15 @@ async def remove_from_ensemble(ids: IDSBase = Depends(get_ids_instance)):
 
 
 @router.post("/ruleset")
-async def test(file: UploadFile = None ,ids: IDSBase = Depends(get_ids_instance)):
+async def ruleset(file: UploadFile = None ,ids: IDSBase = Depends(get_ids_instance)):
     if file is None:
-        raise HTTPException(status_code=400, detail="No file provided")
+        return JSONResponse({"error": "No file provided"}, status_code = 400)
 
     temporary_file_path = "/tmp/temporary.txt"
     await save_file(file, temporary_file_path)
     response = await ids.configure_ruleset(temporary_file_path)
-    return {"message": response}
+    print(response)
+    return JSONResponse({"message": response}, status_code = 200)
 
 
 @router.post("/analysis/static")
