@@ -222,7 +222,7 @@ class IDSBase(ABC):
 
         return response
     
-
+    # TODO 0: make prints to correct log statements
     async def finish_static_analysis_in_background(self):
         response = await self.send_alerts_to_core()
         print(response)
@@ -274,6 +274,7 @@ class IDSBase(ABC):
             task= asyncio.create_task(self.finish_static_analysis_in_background())
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
+            self.static_analysis_running = False
         else:
             await self.stop_analysis()            
 

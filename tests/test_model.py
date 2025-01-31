@@ -58,10 +58,12 @@ class MockIDS(IDSBase):
             pass
 
         async def execute_static_analysis_command(self, file_path: str):
-            pass
+            pid = 789
+            return pid
 
         async def execute_network_analysis_command(self):
-            pass  
+            pid = 456
+            return pid  
 
 @pytest.fixture
 def mock_ids(mock_alert_list):
@@ -72,8 +74,6 @@ def mock_ids(mock_alert_list):
     mock = MockIDS()
     mock.container_id = 1
     mock.ensemble_id = None
-    mock.configure = AsyncMock(return_value="Test")
-    mock.startNetworkAnalysis = AsyncMock(return_value="Started Network Analysis")
     mock.parser = mock_parser
 
     return mock
@@ -173,3 +173,106 @@ async def test_send_alerts_to_core_periodically_exception(mock_post, mock_get_en
     assert mock_post.call_count >= 2  # Ensure it was called at least twice
     # Verify second call was correct
     assert mock_post.call_args_list[1][0][0] == "http://core-url/ensemble/publish/alerts" 
+
+@patch("BICEP_Utils.models.ids_base.stop_process", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_stop_all_processes(mock_stop_process, mock_ids: MockIDS):
+    mock_ids.pids = [111, 222, 333]
+    
+    await mock_ids.stop_all_processes()
+    
+    assert mock_ids.pids == []
+    assert mock_stop_process.call_count == 3  
+
+
+
+@patch("BICEP_Utils.models.ids_base.stop_process", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_stop_all_processes_without_process_numbers(mock_stop_process, mock_ids: MockIDS):
+    mock_ids.pids = []
+    
+    await mock_ids.stop_all_processes()
+    
+    assert mock_ids.pids == [] 
+    assert mock_stop_process.call_count == 0  
+
+@patch("BICEP_Utils.models.ids_base.IDSBase.send_alerts_to_core", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.IDSBase.tell_core_analysis_has_finished", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_finish_static_analysis_in_background(mock_tell_core, mock_send_alerts, mock_ids: MockIDS):
+    mock_send_alerts.return_value = "Alerts Sent"
+    mock_tell_core.return_value = "Analysis Finished"
+    
+    await mock_ids.finish_static_analysis_in_background()
+    
+    mock_send_alerts.assert_called_once()
+    mock_tell_core.assert_called_once()
+
+@patch("BICEP_Utils.models.ids_base.create_and_activate_network_interface", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.mirror_network_traffic_to_interface", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_start_network_analysis(mock_mirror, mock_create_interface, mock_ids: MockIDS):
+    mock_ids.tap_interface_name = "tap0"
+    
+    mock_mirror.return_value = 888
+    network_analysis_pid = await mock_ids.execute_network_analysis_command()
+    response = await mock_ids.start_network_analysis()
+    
+    mock_create_interface.assert_called_once_with("tap0")
+    mock_mirror.assert_called_once_with(default_interface="eth0", tap_interface="tap0")
+    
+    assert mock_mirror.return_value in mock_ids.pids
+    assert network_analysis_pid in mock_ids.pids  
+    assert mock_ids.send_alerts_periodically_task is not None
+    assert response == f"started network analysis for container with {mock_ids.container_id}"
+
+@patch("BICEP_Utils.models.ids_base.IDSBase.tell_core_analysis_has_finished", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.wait_for_process_completion", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_start_static_analysis_if_no_other_analysis_task_running_in_background(mock_wait_for_process,tell_core_has_finished_mock,  mock_ids: MockIDS):
+    mock_ids.static_analysis_running = False  
+    static_analysis_pid = await mock_ids.execute_static_analysis_command("test.pcap")
+    await mock_ids.start_static_analysis("test.pcap")
+    
+    mock_wait_for_process.assert_called_once_with(static_analysis_pid)
+    assert static_analysis_pid not in mock_ids.pids 
+
+
+@patch("BICEP_Utils.models.ids_base.wait_for_process_completion", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_start_static_analysis(mock_wait_for_process, mock_ids: MockIDS):
+    mock_ids.static_analysis_running = True  
+    static_analysis_pid = await mock_ids.execute_static_analysis_command("test.pcap")
+    await mock_ids.start_static_analysis("test.pcap")
+    
+    assert static_analysis_pid not in mock_ids.pids 
+    assert mock_ids.static_analysis_running == False
+
+@patch("BICEP_Utils.models.ids_base.IDSBase.stop_all_processes", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.IDSBase.tell_core_analysis_has_finished", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_stop_static_analysis(mock_tell_core, mock_stop_all, mock_ids: MockIDS):
+  
+    mock_ids.send_alerts_periodically_task = None 
+    mock_ids.tap_interface_name = None
+    
+    await mock_ids.stop_analysis()
+    
+    mock_stop_all.assert_called_once()
+    mock_tell_core.assert_called_once()
+
+@patch("BICEP_Utils.models.ids_base.remove_network_interface", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.IDSBase.stop_all_processes", new_callable=AsyncMock)
+@patch("BICEP_Utils.models.ids_base.IDSBase.tell_core_analysis_has_finished", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_stop_network_analysis(mock_tell_core, mock_stop_all, mock_remove_interface, mock_ids: MockIDS):
+  
+    mock_ids.send_alerts_periodically_task = asyncio.create_task(asyncio.sleep(5))
+    mock_ids.tap_interface_name = "tap0"
+    
+    await mock_ids.stop_analysis()
+    
+    mock_stop_all.assert_called_once()
+    assert mock_ids.send_alerts_periodically_task is None 
+    mock_remove_interface.assert_called_once_with("tap0")
+    mock_tell_core.assert_called_once()
