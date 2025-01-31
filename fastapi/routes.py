@@ -8,6 +8,7 @@ from .dependencies import get_ids_instance
 from ..general_utilities import save_file
 from ..validation.models import NetworkAnalysisData
 import asyncio
+from .utils import save_dataset_and_start_static_analysis
 
 router = APIRouter()
 
@@ -68,8 +69,8 @@ async def static_analysis(ensemble_id: Optional[str] = Form(None), dataset_id: s
     ids.dataset_id = dataset_id
 
     temporary_file_path = "/tmp/dataset.pcap"
-    await save_file(dataset, temporary_file_path)
-    asyncio.create_task(ids.startStaticAnalysis(temporary_file_path))
+    dataset_content= await dataset.read()
+    asyncio.create_task(save_dataset_and_start_static_analysis(ids, dataset_content, temporary_file_path))
     ids.static_analysis_running = True
     http_response = JSONResponse({"message": f"Started analysis for container {container_id}"}, status_code=200)
 
@@ -86,7 +87,7 @@ async def network_analysis(network_analysis_data: NetworkAnalysisData, ids: IDSB
 
 @router.post("/analysis/stop")
 async def stop_analysis(ids: IDSBase = Depends(get_ids_instance)):
-    await ids.stopAnalysis()  
+    await ids.stop_analysis()  
 
     # reset ensemble id to wait if next analysis is for ensemble or ids solo
     if ids.ensemble_id != None:

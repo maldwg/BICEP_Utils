@@ -13,6 +13,9 @@ async def save_file(file, path):
     with open(path, "wb") as f:
         f.write(await file.read())
 
+async def save_dataset(dataset, path):
+    with open(path, "wb") as f:
+        f.write(dataset)
 
 async def get_env_variable(name: str):
     return os.getenv(name)
