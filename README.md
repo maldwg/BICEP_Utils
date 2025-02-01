@@ -31,3 +31,5 @@ The following solutions are either planned or already implemented
 
 
 [Suricata-Image]: https://img.shields.io/docker/v/maxldwg/bicep-suricata/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
+
+
