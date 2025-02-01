@@ -6,40 +6,6 @@ import asyncio
 import httpx
 from ..general_utilities import get_env_variable, wait_for_process_completion, create_and_activate_network_interface, mirror_network_traffic_to_interface, remove_network_interface
 
-class IDSParser(ABC):
-
-
-    # use the isoformat as printed below to return the timestamps of the parsed lines
-    timestamp_format = '%Y-%m-%dT%H:%M:%S.%f%z'
-    
-    @property
-    @abstractmethod
-    async def alert_file_location(self):
-        pass
-
-    @abstractmethod
-    async def parse_alerts(self):
-        """
-        Method triggered once after the static analysis is complete or periodically for a network analysis. 
-        Takes in the whole file, reads it, parses it, deletes it and returns the parsed lines
-        """
-        pass
-
-    @abstractmethod
-    async def parse_line(self, line):
-        """
-        Method to parse one line at a time into the Alert object
-        """
-        pass
-
-    @abstractmethod
-    async def normalize_threat_levels(self, threat: int):
-        """
-       Normalize the threat levels which are individual for each IDS from 0 to 1 (1 being the highest)
-       returns decimal values with only 2 decimals
-        """
-        pass
-
 class Alert():
     """
     Class which contains the most important fields of an alert (one line of anomaly).
@@ -98,6 +64,42 @@ class Alert():
         }
     def to_json(self):
         return json.dumps(self.to_dict())
+
+class IDSParser(ABC):
+
+
+    # use the isoformat as printed below to return the timestamps of the parsed lines
+    timestamp_format = '%Y-%m-%dT%H:%M:%S.%f%z'
+    
+    @property
+    @abstractmethod
+    async def alert_file_location(self):
+        pass
+
+    @abstractmethod
+    async def parse_alerts(self) -> list[Alert]:
+        """
+        Method triggered once after the static analysis is complete or periodically for a network analysis. 
+        Takes in the whole file, reads it, parses it, deletes it and returns the parsed lines
+        """
+        pass
+
+    @abstractmethod
+    async def parse_line(self, line) -> Alert:
+        """
+        Method to parse one line at a time into the Alert object
+        """
+        pass
+
+    @abstractmethod
+    async def normalize_threat_levels(self, threat: int) -> float:
+        """
+       Normalize the threat levels which are individual for each IDS from 0 to 1 (1 being the highest)
+       returns decimal values with only 2 decimals
+        """
+        pass
+
+
     
 class IDSBase(ABC):
     """
@@ -130,7 +132,7 @@ class IDSBase(ABC):
         pass
 
     @abstractmethod
-    async def configure(self, file_path):
+    async def configure(self, file_path) -> str:
         """
         Method for setting up the main configuration file in the corresponding location
         gets a file content as input and needs to save it to the location necesary for the IDS system
@@ -138,7 +140,7 @@ class IDSBase(ABC):
         return "base implementation"
 
     @abstractmethod
-    async def configure_ruleset(self, file_path):
+    async def configure_ruleset(self, file_path) -> str:
         """
         Method for setting up the main configuration file in the corresponding location
         gets a file content as input and needs to save it to the location necesary for the IDS system
@@ -147,7 +149,7 @@ class IDSBase(ABC):
 
 
     @abstractmethod
-    async def execute_static_analysis_command(self, file_path: str):
+    async def execute_static_analysis_command(self, file_path: str) -> int:
         """
         Method that takes all actions necessary to execute the IDS command for a static analysis using a pcap file.
         Returns a pid of the main process spawned.
@@ -156,7 +158,7 @@ class IDSBase(ABC):
 
         
     @abstractmethod
-    async def execute_network_analysis_command(self):
+    async def execute_network_analysis_command(self) -> int:
         """
         Method that takes all actions necessary to execute the IDS command for a network analysis on the self.tap_interface.
         Returns a pid of the main process spawned.        """
@@ -255,6 +257,9 @@ class IDSBase(ABC):
     
 
     async def start_network_analysis(self):
+        # set tap name if not done already
+        if self.tap_interface_name is None:
+            self.set_tap_interface_nametap_interface_name = f"tap{self.container_id}"
         await create_and_activate_network_interface(self.tap_interface_name)
         pid = await mirror_network_traffic_to_interface(default_interface="eth0", tap_interface=self.tap_interface_name)
         self.pids.append(pid)
@@ -290,3 +295,5 @@ class IDSBase(ABC):
         if self.tap_interface_name != None:
             await remove_network_interface(self.tap_interface_name)
         await self.tell_core_analysis_has_finished()
+
+
