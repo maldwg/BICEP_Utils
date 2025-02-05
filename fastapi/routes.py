@@ -81,7 +81,7 @@ async def network_analysis(network_analysis_data: NetworkAnalysisData, ids: IDSB
     if network_analysis_data.ensemble_id != None:
         ids.ensemble_id = network_analysis_data.ensemble_id
 
-    response = await ids.startNetworkAnalysis()
+    response = await ids.start_network_analysis()
     return JSONResponse({"message": response}, status_code=200)
 
 
