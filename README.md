@@ -23,7 +23,7 @@ The following solutions are either planned or already implemented
 |-------------|-------------|------|--------|
 | Slips       | ![Slips-Image] | [Slips implementation](https://github.com/maldwg/BICEP-slips-image) | ✅ Available |
 | Suricata    | ![Suricata-Image] | [Suricata implementation](https://github.com/maldwg/BICEP-suricata-image) | ✅ Available |
-| Snort       | `-` | `-` |  🕒 Planned  |
+| Snort       | ![Snort-Image] | [Snort implementation](https://github.com/maldwg/BICEP-snort-image) |  ✅ Available  |
 
 
 
@@ -32,4 +32,5 @@ The following solutions are either planned or already implemented
 
 [Suricata-Image]: https://img.shields.io/docker/v/maxldwg/bicep-suricata/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
 
+[Snort-Image]: https://img.shields.io/docker/v/maxldwg/bicep-snort/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
 
