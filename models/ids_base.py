@@ -259,7 +259,7 @@ class IDSBase(ABC):
     async def start_network_analysis(self):
         # set tap name if not done already
         if self.tap_interface_name is None:
-            self.set_tap_interface_nametap_interface_name = f"tap{self.container_id}"
+            self.tap_interface_name = f"tap{self.container_id}"
         await create_and_activate_network_interface(self.tap_interface_name)
         pid = await mirror_network_traffic_to_interface(default_interface="eth0", tap_interface=self.tap_interface_name)
         self.pids.append(pid)
