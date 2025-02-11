@@ -51,11 +51,12 @@ async def wait_for_process_completion(pid):
         while True:
             process = psutil.Process(pid)
             if process.is_running():
-                await asyncio.sleep(1)  # Sleep for 1 second before checking again
+                await asyncio.sleep(1)
             else:
                 return process.returncode
     except psutil.NoSuchProcess:
-        return None  # Process with given PID does not exist
+        print("no such process")
+        return None 
     
 
 

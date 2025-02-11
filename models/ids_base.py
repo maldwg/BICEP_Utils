@@ -261,7 +261,8 @@ class IDSBase(ABC):
         if self.tap_interface_name is None:
             self.tap_interface_name = f"tap{self.container_id}"
         await create_and_activate_network_interface(self.tap_interface_name)
-        pid = await mirror_network_traffic_to_interface(default_interface="eth0", tap_interface=self.tap_interface_name)
+        default_interface = await self.get_default_interface_name()
+        pid = await mirror_network_traffic_to_interface(default_interface=default_interface, tap_interface=self.tap_interface_name)
         self.pids.append(pid)
         start_ids = await self.execute_network_analysis_command()
         self.pids.append(start_ids)
@@ -269,6 +270,26 @@ class IDSBase(ABC):
         return f"started network analysis for container with {self.container_id}"
 
     
+    async def get_default_interface_name(self):
+        # command retourns the device of the default route configured
+        # As the container is mounted in the host network, this is alwas the hosts primary interface
+        command = "ip route list | grep default | awk '{print $5} '"
+        try:
+            process = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout,stderr = await process.communicate()
+            if process.returncode != 0:
+                raise Exception(f"Command failed: {stderr.decode().strip()}")
+
+            interface_name = stdout.decode().strip()
+            return interface_name
+        except Exception as e:
+            print(f"During the command execution something went wrong in the environment")
+            raise e
+        
     async def start_static_analysis(self, file_path):
         pid = await self.execute_static_analysis_command(file_path)
         self.pids.append(pid)
