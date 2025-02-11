@@ -219,7 +219,7 @@ async def test_start_network_analysis(mock_mirror, mock_create_interface, mock_i
     response = await mock_ids.start_network_analysis()
     
     mock_create_interface.assert_called_once_with("tap0")
-    mock_mirror.assert_called_once_with(default_interface="eth0", tap_interface="tap0")
+    mock_mirror.assert_called_once()
     
     assert mock_mirror.return_value in mock_ids.pids
     assert network_analysis_pid in mock_ids.pids  

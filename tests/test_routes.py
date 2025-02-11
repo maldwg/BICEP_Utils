@@ -28,7 +28,7 @@ def mock_ids():
     mock.container_id = 1
     mock.ensemble_id = None
     mock.configure = AsyncMock(return_value="Succesfully configured")
-    mock.startNetworkAnalysis = AsyncMock(return_value="Started Network Analysis")
+    mock.start_network_analysis = AsyncMock(return_value="Started Network Analysis")
     mock.configure_ruleset = AsyncMock(return_value = "Succesfully configured Ruleset")
     return mock
 
@@ -126,9 +126,11 @@ async def test_network_analysis(mock_ids):
         ensemble_id=None
     )
     response = await network_analysis(network_analysis_data=network_analysis_data,ids=mock_ids)
+    print(response)
     response_json = json.loads(response.body.decode())
+    print(response_json)
     assert response.status_code == 200
-    assert response_json == {"message": mock_ids.startNetworkAnalysis.return_value}
+    assert response_json == {"message": mock_ids.start_network_analysis.return_value}
 
 
 @pytest.mark.asyncio
@@ -140,7 +142,7 @@ async def test_network_analysis_for_ensemble(mock_ids):
     response = await network_analysis(network_analysis_data=network_analysis_data,ids=mock_ids)
     response_json = json.loads(response.body.decode())
     assert response.status_code == 200
-    assert response_json == {"message": mock_ids.startNetworkAnalysis.return_value}
+    assert response_json == {"message": mock_ids.start_network_analysis.return_value}
     assert mock_ids.ensemble_id == network_analysis_data.ensemble_id
 
 @pytest.mark.asyncio
