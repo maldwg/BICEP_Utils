@@ -4,7 +4,7 @@ import json
 from http.client import HTTPResponse
 import asyncio
 import httpx
-from ..general_utilities import get_env_variable, wait_for_process_completion, create_and_activate_network_interface, mirror_network_traffic_to_interface, remove_network_interface
+from ..general_utilities import LOGGER, get_env_variable, wait_for_process_completion, create_and_activate_network_interface, mirror_network_traffic_to_interface, remove_network_interface
 
 class Alert():
     """
@@ -192,11 +192,11 @@ class IDSBase(ABC):
                         # set timeout to 90 seconds to be able to send all alerts
                         response: HTTPResponse = await client.post(core_url+endpoint, data=json.dumps(data), timeout=90)
                 except Exception as e:
-                    print("Something went wrong during alert sending... retrying on next iteration")
+                    LOGGER.error("Something went wrong during alert sending... retrying on next iteration")
                 await asyncio.sleep(period)
 
         except asyncio.CancelledError as e:
-            print(f"Canceled the sending of alerts")
+            LOGGER.info(f"Canceled the sending of alerts")
 
 
     async def send_alerts_to_core(self):
@@ -226,10 +226,8 @@ class IDSBase(ABC):
     
     # TODO 0: make prints to correct log statements
     async def finish_static_analysis_in_background(self):
-        response = await self.send_alerts_to_core()
-        print(response)
-        res = await self.tell_core_analysis_has_finished()
-        print(res)
+        await self.send_alerts_to_core()
+        await self.tell_core_analysis_has_finished()
 
 
     async def tell_core_analysis_has_finished(self):
@@ -267,6 +265,7 @@ class IDSBase(ABC):
         start_ids = await self.execute_network_analysis_command()
         self.pids.append(start_ids)
         self.send_alerts_periodically_task = asyncio.create_task(self.send_alerts_to_core_periodically())
+        LOGGER.debug(f"started network analysis for container with {self.container_id}")
         return f"started network analysis for container with {self.container_id}"
 
     
@@ -287,7 +286,7 @@ class IDSBase(ABC):
             interface_name = stdout.decode().strip()
             return interface_name
         except Exception as e:
-            print(f"During the command execution something went wrong in the environment")
+            LOGGER.error(f"During the command execution something went wrong in the environment")
             raise e
         
     async def start_static_analysis(self, file_path):

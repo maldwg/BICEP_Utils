@@ -3,6 +3,22 @@ import psutil
 import subprocess
 import asyncio
 from enum import Enum
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        # Ensure logs are printed to stdout
+        logging.StreamHandler()  
+    ]
+)
+LOGGER = logging.getLogger(__name__)
+# Ensure logs are propagated to Gunicorn
+LOGGER.propagate = True  
+LOGGER.setLevel(logging.DEBUG)
+
+
 
 
 class ANALYSIS_MODES(Enum):
@@ -39,7 +55,7 @@ async def stop_process(pid: int):
         if process.is_running():
             process.terminate()
     except psutil.NoSuchProcess:
-        print(f"No such process with pid {pid}")
+        LOGGER.error(f"No such process with pid {pid}")
     except Exception as e:
         print(e)
 
@@ -55,7 +71,7 @@ async def wait_for_process_completion(pid):
             else:
                 return process.returncode
     except psutil.NoSuchProcess:
-        print("no such process")
+        LOGGER.error("No such process")
         return None 
     
 
