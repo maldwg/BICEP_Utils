@@ -54,7 +54,6 @@ async def ruleset(file: UploadFile = None ,ids: IDSBase = Depends(get_ids_instan
     temporary_file_path = "/tmp/temporary.txt"
     await save_file(file, temporary_file_path)
     response = await ids.configure_ruleset(temporary_file_path)
-    print(response)
     return JSONResponse({"message": response}, status_code = 200)
 
 
