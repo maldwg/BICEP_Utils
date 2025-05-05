@@ -8,7 +8,7 @@ from .dependencies import get_ids_instance
 from ..general_utilities import save_file
 from ..validation.models import NetworkAnalysisData
 import asyncio
-from .utils import save_dataset_and_start_static_analysis
+import shutil
 
 router = APIRouter()
 
@@ -66,10 +66,12 @@ async def static_analysis(ensemble_id: Optional[str] = Form(None), dataset_id: s
         ids.ensemble_id = int(ensemble_id)
 
     ids.dataset_id = dataset_id
-
     temporary_file_path = "/tmp/dataset.pcap"
-    dataset_content= await dataset.read()
-    asyncio.create_task(save_dataset_and_start_static_analysis(ids, dataset_content, temporary_file_path))
+    
+    with open(temporary_file_path, "wb") as f_out:
+        shutil.copyfileobj(dataset.file, f_out)
+    
+    asyncio.create_task(ids.start_static_analysis(temporary_file_path))
     ids.static_analysis_running = True
     http_response = JSONResponse({"message": f"Started analysis for container {container_id}"}, status_code=200)
 

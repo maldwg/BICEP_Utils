@@ -100,10 +100,12 @@ async def test_remove_from_ensemble(mock_ids):
         assert mock_ids.ensemble_id == None
 
 @patch("BICEP_Utils.fastapi.routes.save_file")
+@patch("shutil.copyfileobj")
 @pytest.mark.asyncio
-async def test_static_analysis(save_file_mock, mock_ids):
+async def test_static_analysis(copy_mock, save_file_mock, mock_ids):
     dataset_id = "1"
     dataset = MagicMock(spec=UploadFile)
+    dataset.file = True
     response = await static_analysis(ensemble_id=mock_ids.ensemble_id, dataset_id=dataset_id, container_id=mock_ids.container_id, dataset=dataset,ids=mock_ids)
     response_json = json.loads(response.body.decode())
     assert response.status_code == 200
