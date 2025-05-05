@@ -6,21 +6,31 @@ import asyncio
 import httpx
 from ..general_utilities import LOGGER, get_env_variable, wait_for_process_completion, create_and_activate_network_interface, mirror_network_traffic_to_interface, remove_network_interface
 
+
+"""
+Module to provide generic base classes foir the IDS containers to implement their functionality and parse log lines into the common Alert format
+"""
+
 class Alert():
     """
     Class which contains the most important fields of an alert (one line of anomaly).
     It presents a standardized interface for the different IDS to map their distinct alerts to.
     """
-    time: str
-    source_ip: str
-    source_port: str
-    destination_ip: str
-    destination_port: str
-    severity: float
-    type: str
-    message: str
 
     def __init__(self, time=None, source_ip=None, source_port=None, destination_ip=None, destination_port=None, severity=None, type=None, message=None):
+        """
+        Initializes an Alert object with optional attributes.
+        
+        Args:
+            time (str, optional): Timestamp of the alert.
+            source_ip (str, optional): Source IP address.
+            source_port (str, optional): Source port number.
+            destination_ip (str, optional): Destination IP address.
+            destination_port (str, optional): Destination port number.
+            severity (float, optional): Severity level of the alert.
+            type (str, optional): Type of the alert.
+            message (str, optional): Description of the alert.
+        """
         self.time=time
         self.source_ip=source_ip
         self.source_port=source_port
@@ -32,6 +42,15 @@ class Alert():
 
     @classmethod
     def from_json(cls, json_alert: str):
+        """
+        Creates an Alert object from a JSON string.
+        
+        Args:
+            json_alert (str): JSON representation of an alert.
+        
+        Returns:
+            Alert: An instance of the Alert class.
+        """
         # replace none with null to be able to load from json
         json_str = json_alert.replace('None', 'null')
         # replace single quotes with double quotes to be able to load it from json
@@ -49,9 +68,21 @@ class Alert():
         )
 
     def __str__(self):
+        """
+        Returns a string representation of the alert.
+        
+        Returns:
+            str: Readable format of the alert.
+        """
         return f"{self.time}, From: {self.source_ip}:{self.source_port}, To: {self.destination_ip}:{self.destination_port}, Type: {self.type}, Content: {self.message}, Severity: {self.severity}"
 
     def to_dict(self):
+        """
+        Converts the alert object to a dictionary.
+        
+        Returns:
+            dict: Dictionary representation of the alert.
+        """
         return {
             "time": self.time,  
             "source_ip": self.source_ip,
@@ -62,11 +93,20 @@ class Alert():
             "type": self.type,
             "message": self.message
         }
+    
     def to_json(self):
+        """
+        Converts the alert object to a JSON string.
+        
+        Returns:
+            str: JSON representation of the alert.
+        """
         return json.dumps(self.to_dict())
 
 class IDSParser(ABC):
-
+    """
+    Abstract base class for parsing alerts from IDS logs.
+    """
 
     # use the isoformat as printed below to return the timestamps of the parsed lines
     timestamp_format = '%Y-%m-%dT%H:%M:%S.%f%z'
@@ -74,28 +114,43 @@ class IDSParser(ABC):
     @property
     @abstractmethod
     async def alert_file_location(self):
+        """Abstract property for specifying the location of the alert file."""
         pass
 
     @abstractmethod
     async def parse_alerts(self) -> list[Alert]:
         """
         Method triggered once after the static analysis is complete or periodically for a network analysis. 
-        Takes in the whole file, reads it, parses it, deletes it and returns the parsed lines
+        Takes in the whole file, reads it, parses it, deletes it.
+        
+        Returns:
+            list[Alert]: List of parsed alerts.
         """
         pass
 
     @abstractmethod
     async def parse_line(self, line) -> Alert:
         """
-        Method to parse one line at a time into the Alert object
+        Parses a single line into an Alert object.
+        
+        Args:
+            line (str): A single log line.
+        
+        Returns:
+            Alert: Parsed alert object.
         """
         pass
 
     @abstractmethod
     async def normalize_threat_levels(self, threat: int) -> float:
         """
-       Normalize the threat levels which are individual for each IDS from 0 to 1 (1 being the highest)
-       returns decimal values with only 2 decimals
+        Normalizes threat levels to a range of 0 to 1.
+        
+        Args:
+            threat (int): Threat level from the IDS.
+        
+        Returns:
+            float: Normalized threat level rounded to two decimals.
         """
         pass
 
@@ -106,44 +161,87 @@ class IDSBase(ABC):
     Abstract base class for all IDS supported by BICEP
     Each IDS involved needs to inherit from this base class and implement the following methods and attributes
     """
-    container_id: int = None
-    ensemble_id: int = None
-    pids: list[int] = []
-    # Id of the dataset used to trigger a static analysis
-    dataset_id: int = None
-    static_analysis_running: bool = False
-    send_alerts_periodically_task = None
-    tap_interface_name: str = None
-    background_tasks = set()
+
+    def __init__(
+            self, 
+            container_id: int = None, 
+            ensemble_id: int = None, 
+            pids: list[int] = [], 
+            dataset_id: int = None, 
+            static_analysis_running: bool = False, 
+            send_alerts_periodically_task = None, 
+            tap_interface_name: str = None, 
+            background_tasks: set = set()
+        ):
+        """
+        Constructor of the IDSBase class
+
+        Args:
+            container_id (int): = None, 
+            ensemble_id (int): = None, 
+            pids (list[int]): = [], 
+            dataset_id (int): = None, 
+            static_analysis_running (bool): = False, 
+            send_alerts_periodically_task : = None, 
+            tap_interface_name (str): = None, 
+            background_tasks (set): = set()
+        """
+        self.container_id: int = container_id
+        self.ensemble_id: int = ensemble_id
+        self.pids: list[int] = pids
+        # Id of the dataset used to trigger a static analysis
+        self.dataset_id: int = dataset_id
+        self.static_analysis_running: bool = static_analysis_running
+        self.send_alerts_periodically_task = send_alerts_periodically_task
+        self.tap_interface_name: str = tap_interface_name
+        self.background_tasks = background_tasks
     
     @property
     @abstractmethod
     async def parser(self):
+        """
+        Abstract property to reference the repsective IDS Parser.
+        """
         pass
 
     @property
     @abstractmethod
     async def log_location(self):
+        """Abstract property specifying the log location."""
         pass
     
     @property
     @abstractmethod
+
     async def configuration_location(self):
+        """Abstract property specifying the configuration location."""
         pass
 
     @abstractmethod
     async def configure(self, file_path) -> str:
         """
-        Method for setting up the main configuration file in the corresponding location
-        gets a file content as input and needs to save it to the location necesary for the IDS system
+        Configures the IDS with the provided configuration file.
+        E.g. placing the configuration in the correct location.
+        
+        Args:
+            file_path (str): Path to the configuration file.
+        
+        Returns:
+            str: Confirmation message.
         """
         return "base implementation"
 
     @abstractmethod
     async def configure_ruleset(self, file_path) -> str:
         """
-        Method for setting up the main configuration file in the corresponding location
-        gets a file content as input and needs to save it to the location necesary for the IDS system
+        Configures the IDS ruleset with the provided file.
+        If not ruleset is required for the IDS, simply return a confirmation message saying so.
+        
+        Args:
+            file_path (str): Path to the ruleset file.
+        
+        Returns:
+            str: Confirmation message.
         """
         return "base implementation"
 
@@ -151,8 +249,13 @@ class IDSBase(ABC):
     @abstractmethod
     async def execute_static_analysis_command(self, file_path: str) -> int:
         """
-        Method that takes all actions necessary to execute the IDS command for a static analysis using a pcap file.
-        Returns a pid of the main process spawned.
+        Executes the IDS command for static analysis using a pcap file.
+        
+        Args:
+            file_path (str): Path to the pcap file.
+        
+        Returns:
+            int: Process ID of the spawned IDS process.
         """
         pass
 
@@ -160,11 +263,17 @@ class IDSBase(ABC):
     @abstractmethod
     async def execute_network_analysis_command(self) -> int:
         """
-        Method that takes all actions necessary to execute the IDS command for a network analysis on the self.tap_interface.
-        Returns a pid of the main process spawned.        """
+        Method that takes all actions necessary to execute the IDS command for a network analysis on the self.tap_interface.        
+       
+        Returns:
+            int: Process ID of the spawned IDS process.
+        """
         pass
 
     async def stop_all_processes(self):
+        """
+        Stops all running IDS processes (static or network analysis tasks).
+        """
         remove_process_ids = []
         if self.pids != []:
             for pid in self.pids:
@@ -174,6 +283,14 @@ class IDSBase(ABC):
             self.pids.remove(removed_pid)      
 
     async def send_alerts_to_core_periodically(self, period: float=300):
+        """
+        Background method to collect all currently available alerts, parses them and sends them to the Core.
+        The method will erase all logfiles so far after the collection to ensure that the same alerts are not send twice.
+        Method stops only when the analysis gets stopped.
+
+        Args: 
+            period (float): The period in seconds when to send the next batch to the core
+        """
         try:
             if self.ensemble_id == None:
                 endpoint = f"/ids/publish/alerts"
@@ -199,7 +316,12 @@ class IDSBase(ABC):
             LOGGER.info(f"Canceled the sending of alerts")
 
 
-    async def send_alerts_to_core(self):
+    async def send_alerts_to_core(self) -> HTTPResponse:
+        """
+        Method to collect all currently available alerts, parses them and sends them to the Core.
+        The method will erase all logfiles so far after the collection to ensure that the same alerts are not send twice.
+        This method will be executed once after a static analysis.
+        """
         if self.ensemble_id == None:
             endpoint = f"/ids/publish/alerts"
         else:
@@ -230,7 +352,10 @@ class IDSBase(ABC):
         await self.tell_core_analysis_has_finished()
 
 
-    async def tell_core_analysis_has_finished(self):
+    async def tell_core_analysis_has_finished(self) -> HTTPResponse:
+        """
+        Method to tell the Core that the analysis has been finished.  
+        """
         if self.ensemble_id == None:
             endpoint = f"/ids/analysis/finished"
         else:
@@ -254,7 +379,13 @@ class IDSBase(ABC):
         return response
     
 
-    async def start_network_analysis(self):
+    async def start_network_analysis(self) -> str:
+        """
+        Method to start a network anaylsis. Ensures that necessary tap interface is available and that traffic replication has started for that tap interface.
+
+        Returns:
+            str: Confirmation string that the analysis has been started.
+        """
         # set tap name if not done already
         if self.tap_interface_name is None:
             self.tap_interface_name = f"tap{self.container_id}"
@@ -269,7 +400,13 @@ class IDSBase(ABC):
         return f"started network analysis for container with {self.container_id}"
 
     
-    async def get_default_interface_name(self):
+    async def get_default_interface_name(self) -> str:
+        """
+        Method to receive the name of the main interface by looking into the ip routes.
+
+        Returns:
+            interface_name (str): The interface name of the main network interface
+        """
         # command retourns the device of the default route configured
         # As the container is mounted in the host network, this is alwas the hosts primary interface
         command = "ip route list | grep default | awk '{print $5} '"
@@ -290,6 +427,12 @@ class IDSBase(ABC):
             raise e
         
     async def start_static_analysis(self, file_path):
+        """
+        Method to start a static analysis
+
+        Args: 
+            file_path (str): The file path to the dataset file to trigger the static analysis on.
+        """
         pid = await self.execute_static_analysis_command(file_path)
         self.pids.append(pid)
 
@@ -306,6 +449,10 @@ class IDSBase(ABC):
 
     # overrides the default method
     async def stop_analysis(self):
+        """
+        Method to stop any analysis by stopping all processes in the background.
+        Afterward, tells the core that the analysis has been comlpeted.
+        """
         self.static_analysis_running = False
         await self.stop_all_processes()
         if self.send_alerts_periodically_task != None:            
