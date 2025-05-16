@@ -75,15 +75,13 @@ async def stop_process(pid: int):
 
 async def wait_for_process_completion(pid):
     try:
-        while True:
-            process = psutil.Process(pid)
-            if process.is_running():
-                await asyncio.sleep(1)
-            else:
-                return process.returncode
+        process = psutil.Process(pid)
+        # Wait for the process to terminate in a non-blocking way by using asyncio.to_thread
+        returncode = await asyncio.to_thread(process.wait)
+        return returncode
     except psutil.NoSuchProcess:
         LOGGER.error("No such process")
-        return None 
+        return None
     
 
 

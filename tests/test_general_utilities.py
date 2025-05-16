@@ -4,7 +4,7 @@ import asyncio
 import psutil
 import subprocess
 import time
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from BICEP_Utils.general_utilities import (
     save_file,
     get_env_variable,
@@ -89,12 +89,13 @@ async def test_stop_process(mock_process_class):
 @pytest.mark.asyncio
 @patch("psutil.Process")
 async def test_wait_for_process_completion(mock_process_class):
-    mock_process = mock_process_class.return_value
-    mock_process.is_running.side_effect = [True, False]
-    mock_process.returncode = 0
-    
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0  # Simulate return code 0
+    mock_process_class.return_value = mock_process
+
     result = await wait_for_process_completion(1234)
-    
+
+    mock_process.wait.assert_called_once()
     assert result == 0
 
 @pytest.mark.asyncio
