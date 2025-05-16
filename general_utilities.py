@@ -36,7 +36,7 @@ async def save_dataset(dataset, path):
 async def get_env_variable(name: str):
     return os.getenv(name)
 
-async def execute_command(command):
+async def execute_command_async(command):
     try:
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -48,6 +48,17 @@ async def execute_command(command):
         print(e)
         return None
     
+def exececute_command_sync_in_seperate_thread(command, cwd):
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        # redirect stdout/error to prevent buffering issues
+        stdout=subprocess.DEVNULL,  
+        stderr=subprocess.DEVNULL, 
+        stdin=subprocess.DEVNULL,   
+        start_new_session=True      
+    )
+    return process.pid
 
 async def stop_process(pid: int):
     try:
@@ -78,18 +89,18 @@ async def wait_for_process_completion(pid):
 
 async def create_and_activate_network_interface(tap_interface_name):
     setup_interface = ["ip", "link", "add", tap_interface_name, "type", "dummy"]
-    await execute_command(setup_interface)
+    await execute_command_async(setup_interface)
     # ensure, interface is up
     # TODO 10: make this a correct wait by watching for the interface to be created
     await asyncio.sleep(2)
     activate_interface = ["ip", "link", "set", tap_interface_name, "up"]
-    await execute_command(activate_interface)
+    await execute_command_async(activate_interface)
     
 
 async def mirror_network_traffic_to_interface(tap_interface: str, default_interface: str="eth0"):
     activate_interface = ["daemonlogger", "-i", default_interface, "-o", tap_interface]
-    return await execute_command(activate_interface)       
+    return await execute_command_async(activate_interface)       
 
 async def remove_network_interface(tap_interface_name):
     remove_interface = ["ip", "link", "delete", tap_interface_name]
-    await execute_command(remove_interface)
+    await execute_command_async(remove_interface)

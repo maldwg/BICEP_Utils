@@ -10,7 +10,7 @@ from BICEP_Utils.validation.models import NetworkAnalysisData
 from BICEP_Utils.general_utilities import (
     save_file,
     get_env_variable,
-    execute_command,
+    execute_command_async,
     stop_process,
     wait_for_process_completion,
     create_and_activate_network_interface,
