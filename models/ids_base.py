@@ -275,10 +275,9 @@ class IDSBase(ABC):
         Stops all running IDS processes (static or network analysis tasks).
         """
         remove_process_ids = []
-        if self.pids != []:
-            for pid in self.pids:
-                await stop_process(pid)
-                remove_process_ids.append(pid)
+        for pid in self.pids:
+            await stop_process(pid)
+            remove_process_ids.append(pid)
         for removed_pid in remove_process_ids:
             self.pids.remove(removed_pid)      
 
@@ -435,9 +434,11 @@ class IDSBase(ABC):
         """
         pid = await self.execute_static_analysis_command(file_path)
         self.pids.append(pid)
-
         await wait_for_process_completion(pid)
-        self.pids.remove(pid)
+        if pid in self.pids:
+            self.pids.remove(pid)
+        else:
+            print(f"PID {pid} was already removed from pid list {self.pids} via another subprocess")
         if self.static_analysis_running:
             task= asyncio.create_task(self.finish_static_analysis_in_background())
             self.background_tasks.add(task)
