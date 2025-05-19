@@ -40,8 +40,9 @@ async def execute_command_async(command):
     try:
         process = await asyncio.create_subprocess_exec(
             *command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            stdin=asyncio.subprocess.DEVNULL
         )
         return process.pid
     except Exception as e:
