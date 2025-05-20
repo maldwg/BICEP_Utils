@@ -39,7 +39,33 @@ class Alert():
         self.severity=severity
         self.type=type
         self.message=message
+        
+    def __eq__(self, other):
+        if not isinstance(other, Alert):
+            return False
+        return (
+            self.time == other.time and
+            self.source_ip == other.source_ip and
+            self.source_port == other.source_port and
+            self.destination_ip == other.destination_ip and
+            self.destination_port == other.destination_port and
+            self.severity == other.severity and
+            self.type == other.type and
+            self.message == other.message
+        )
 
+    def __hash__(self):
+        return hash((
+            self.time,
+            self.source_ip,
+            self.source_port,
+            self.destination_ip,
+            self.destination_port,
+            self.severity,
+            self.type,
+            self.message
+        ))
+        
     @classmethod
     def from_json(cls, json_alert: str):
         """
@@ -328,7 +354,9 @@ class IDSBase(ABC):
 
         # tell the core to stop/set status to idle again
         core_url = await get_env_variable("CORE_URL")
+        LOGGER.info("Begin parsing of alerts...")   
         alerts: list[Alert] = await self.parser.parse_alerts()
+        LOGGER.info("Succesfully parsed all alerts")   
         json_alerts = [ a.to_dict() for a in alerts] 
 
         data = {"container_id": self.container_id, "ensemble_id": self.ensemble_id, "alerts": json_alerts, "analysis_type": "static", "dataset_id": self.dataset_id}
@@ -338,7 +366,7 @@ class IDSBase(ABC):
             response: HTTPResponse = await client.post(core_url+endpoint, data=json.dumps(data)
                 ,timeout=300
             )
-
+        LOGGER.info("Send all alerts to the core")   
         # remove dataset here, becasue removing it in tell_core function removes the id before using it here otehrwise
         if self.dataset_id != None:
             self.dataset_id = None
@@ -447,7 +475,6 @@ class IDSBase(ABC):
             self.static_analysis_running = False
         else:
             await self.stop_analysis()         
-        LOGGER.info("Static analysis processing completely finished")   
 
 
     # overrides the default method
