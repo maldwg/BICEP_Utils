@@ -439,13 +439,15 @@ class IDSBase(ABC):
             self.pids.remove(pid)
         else:
             print(f"PID {pid} was already removed from pid list {self.pids} via another subprocess")
+        LOGGER.info(f"Process for static analysis finished")
         if self.static_analysis_running:
             task= asyncio.create_task(self.finish_static_analysis_in_background())
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
             self.static_analysis_running = False
         else:
-            await self.stop_analysis()            
+            await self.stop_analysis()         
+        LOGGER.info("Static analysis processing completely finished")   
 
 
     # overrides the default method
