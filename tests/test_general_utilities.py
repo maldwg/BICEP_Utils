@@ -53,8 +53,7 @@ async def test_execute_command_async(mock_subprocess):
     pid = await execute_command_async(command)
     
     assert pid == 1234
-    mock_subprocess.assert_called_once_with(*command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+    mock_subprocess.assert_called_once_with(*command, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL, stdin=asyncio.subprocess.DEVNULL)
 
 def test_execute_command_returns_valid_pid(tmp_path):
     command = ["sleep", "3"]  
