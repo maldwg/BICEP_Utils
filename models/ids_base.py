@@ -48,10 +48,7 @@ class Alert():
             self.source_ip == other.source_ip and
             self.source_port == other.source_port and
             self.destination_ip == other.destination_ip and
-            self.destination_port == other.destination_port and
-            self.severity == other.severity and
-            self.type == other.type and
-            self.message == other.message
+            self.destination_port == other.destination_port 
         )
 
     def __hash__(self):
@@ -60,10 +57,7 @@ class Alert():
             self.source_ip,
             self.source_port,
             self.destination_ip,
-            self.destination_port,
-            self.severity,
-            self.type,
-            self.message
+            self.destination_port
         ))
         
     @classmethod
