@@ -4,6 +4,7 @@ import subprocess
 import asyncio
 from enum import Enum
 import logging
+from dateutil import parser 
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +49,9 @@ async def execute_command_async(command):
     except Exception as e:
         print(e)
         return None
+
+async def normalize_timestamp_for_alert(timestamp_string: str):
+    return parser.parse(timestamp_string).replace(tzinfo=None).replace(microsecond=0).isoformat()
     
 def exececute_command_sync_in_seperate_thread(command, cwd):
     process = subprocess.Popen(
