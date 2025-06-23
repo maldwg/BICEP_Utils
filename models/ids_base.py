@@ -5,6 +5,7 @@ from http.client import HTTPResponse
 import asyncio
 import httpx
 from ..general_utilities import LOGGER, get_env_variable, wait_for_process_completion, create_and_activate_network_interface, mirror_network_traffic_to_interface, remove_network_interface
+import ast
 
 
 """
@@ -71,11 +72,12 @@ class Alert():
         Returns:
             Alert: An instance of the Alert class.
         """
-        # replace none with null to be able to load from json
-        json_str = json_alert.replace('None', 'null')
-        # replace single quotes with double quotes to be able to load it from json
-        json_str = json_str.replace("'",'"')
-        alert_dict = json.loads(json_str)
+
+        try:
+            alert_dict = ast.literal_eval(json_alert)
+        except Exception as e:
+            json_str = json_alert.replace('None', 'null').replace("'", '"')
+            alert_dict = json.loads(json_str)
         return Alert(
             time=alert_dict["time"],
             source_ip=alert_dict["source_ip"],
