@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from ..general_utilities import stop_process
 import json 
 from http.client import HTTPResponse
@@ -217,6 +218,8 @@ class IDSBase(ABC):
         self.send_alerts_periodically_task = send_alerts_periodically_task
         self.tap_interface_name: str = tap_interface_name
         self.background_tasks = background_tasks
+        self.analysis_start_time = None
+        self.analysis_stop_time = None
     
     @property
     @abstractmethod
@@ -355,7 +358,15 @@ class IDSBase(ABC):
         LOGGER.info("Succesfully parsed all alerts")   
         json_alerts = [ a.to_dict() for a in alerts] 
 
-        data = {"container_id": self.container_id, "ensemble_id": self.ensemble_id, "alerts": json_alerts, "analysis_type": "static", "dataset_id": self.dataset_id}
+        data = {
+                "container_id": self.container_id, 
+                "ensemble_id": self.ensemble_id, 
+                "alerts": json_alerts, 
+                "analysis_type": "static", 
+                "dataset_id": self.dataset_id,
+                "start_time": self.analysis_start_time,
+                "stop_time": self.analysis_stop_time
+            }
         
         async with httpx.AsyncClient() as client:
             # set timeout to 600, to be able to send all alerts
@@ -399,6 +410,13 @@ class IDSBase(ABC):
         # reset ensemble id after each analysis is completed to keep track if analysis has been triggered for ensemble or not
         if self.ensemble_id != None:
             self.ensemble_id = None
+
+        if self.analysis_start_time != None:
+            self.analysis_start_time = None
+            
+        if self.analysis_stop_time != None:
+            self.analysis_stop_time = None
+                       
         return response
     
 
@@ -458,7 +476,9 @@ class IDSBase(ABC):
         """
         pid = await self.execute_static_analysis_command(file_path)
         self.pids.append(pid)
+        self.analysis_start_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S.%f")
         await wait_for_process_completion(pid)
+        self.analysis_stop_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S.%f")
         if pid in self.pids:
             self.pids.remove(pid)
         else:
