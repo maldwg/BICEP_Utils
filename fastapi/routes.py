@@ -31,6 +31,15 @@ async def configure(container_id: str = Form(...) , file: UploadFile = Form(...)
     await save_file(file, temporary_file_path)
     response = await ids.configure(temporary_file_path)
     LOGGER.debug("Configured system by adding main config file")
+    
+    # Start metrics collector after configuration
+    from ..metrics_collector import start_metrics_collector
+    container_name = f"container-{container_id}"  # This should match the actual container name
+    ids.metrics_collector = await start_metrics_collector(
+        container_id=int(container_id),
+        container_name=container_name
+    )
+    
     return JSONResponse({"message": response}, status_code = 200)
 
 @router.post("/configure/ensemble/add/{ensemble_id}")
