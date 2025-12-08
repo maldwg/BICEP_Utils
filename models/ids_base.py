@@ -171,7 +171,8 @@ class IDSBase(ABC):
             static_analysis_running: bool = False, 
             send_alerts_periodically_task = None, 
             tap_interface_name: str = None, 
-            background_tasks: set = set()
+            background_tasks: set = set(),
+            metrics_collector = None
         ):
         """
         Constructor of the IDSBase class
@@ -184,7 +185,8 @@ class IDSBase(ABC):
             static_analysis_running (bool): = False, 
             send_alerts_periodically_task : = None, 
             tap_interface_name (str): = None, 
-            background_tasks (set): = set()
+            background_tasks (set): = set(),
+            metrics_collector: = None
         """
         self.container_id: int = container_id
         self.ensemble_id: int = ensemble_id
@@ -195,6 +197,7 @@ class IDSBase(ABC):
         self.send_alerts_periodically_task = send_alerts_periodically_task
         self.tap_interface_name: str = tap_interface_name
         self.background_tasks = background_tasks
+        self.metrics_collector = metrics_collector
     
     @property
     @abstractmethod
