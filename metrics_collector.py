@@ -32,24 +32,34 @@ class MetricsCollector:
         
     async def collect_metrics(self) -> dict:
         """
-        Collect current CPU and memory metrics.
+        Collect current CPU and memory metrics for the entire container.
         
         Returns:
             dict with cpu_usage (in cores) and memory_usage (in MB)
         """
         try:
-            # CPU usage in cores (not percentage)
-            # cpu_percent returns percentage over interval, divide by 100 to get cores
-            cpu_percent = self.process.cpu_percent(interval=1) / 100.0
+            # Get all processes in container and sum their resource usage
+            total_cpu_percent = 0.0
+            total_memory_bytes = 0
             
-            # Memory usage in MB
-            memory_info = self.process.memory_info()
-            memory_mb = memory_info.rss / (1024 * 1024)
+            # Iterate through all processes
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    # Get CPU and memory for each process
+                    proc_cpu = proc.cpu_percent(interval=0.1) / 100.0  # Convert to cores
+                    proc_mem = proc.memory_info().rss
+                    
+                    total_cpu_percent += proc_cpu
+                    total_memory_bytes += proc_mem
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            memory_mb = total_memory_bytes / (1024 * 1024)
             
             return {
                 "container_id": self.container_id,
                 "container_name": self.container_name,
-                "cpu_usage": round(cpu_percent, 4),
+                "cpu_usage": round(total_cpu_percent, 4),
                 "memory_usage": round(memory_mb, 2)
             }
         except Exception as e:
@@ -115,13 +125,20 @@ async def start_metrics_collector(container_id: int, container_name: str, core_b
     Args:
         container_id: The ID of the IDS container
         container_name: The name of the IDS container
-        core_backend_url: URL of the core backend (if None, reads from CORE_BACKEND_URL env var)
+        core_backend_url: URL of the core backend (if None, reads from CORE_URL env var)
         
     Returns:
         MetricsCollector instance
     """
     if core_backend_url is None:
-        core_backend_url = os.environ.get('CORE_BACKEND_URL', 'http://core:8000')
+        # Try CORE_URL first (used by IDS containers), then fall back to CORE_BACKEND_URL
+        core_backend_url = os.environ.get('CORE_URL') or os.environ.get('CORE_BACKEND_URL')
+        if not core_backend_url:
+            LOGGER.error("Neither CORE_URL nor CORE_BACKEND_URL environment variable is set")
+            # Use a default that won't work but won't crash
+            core_backend_url = 'http://localhost:8000'
+    
+    LOGGER.info(f"Starting metrics collector for {container_name} pushing to {core_backend_url}")
     
     collector = MetricsCollector(container_id, container_name, core_backend_url)
     asyncio.create_task(collector.start())

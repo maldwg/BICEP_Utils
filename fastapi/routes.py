@@ -20,7 +20,7 @@ async def healthcheck():
 # TODO 10: send status codeds and response objects every time
 
 @router.post("/configuration")
-async def configure(container_id: str = Form(...) , file: UploadFile = Form(...)  ,ids: IDSBase = Depends(get_ids_instance)):
+async def configure(container_id: str = Form(...), container_name: str = Form(...), file: UploadFile = Form(...)  ,ids: IDSBase = Depends(get_ids_instance)):
     if file is None:
         return JSONResponse({"error": "No file provided"}, status_code = 400)
     
@@ -32,12 +32,11 @@ async def configure(container_id: str = Form(...) , file: UploadFile = Form(...)
     response = await ids.configure(temporary_file_path)
     LOGGER.debug("Configured system by adding main config file")
     
-    # Start metrics collector after configuration
-    from ..metrics_collector import start_metrics_collector
-    container_name = f"container-{container_id}"  # This should match the actual container name
-    ids.metrics_collector = await start_metrics_collector(
+    # Start cgroup metrics collector after configuration
+    from ..cgroup_metrics_collector import start_cgroup_metrics_collector
+    ids.metrics_collector = await start_cgroup_metrics_collector(
         container_id=int(container_id),
-        container_name=container_name
+        container_name=container_name  # Use actual container name from database
     )
     
     return JSONResponse({"message": response}, status_code = 200)
