@@ -10,6 +10,7 @@ import asyncio
 import time
 import os
 import tempfile
+import uuid
 import docker
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
@@ -250,13 +251,15 @@ class TestDockerIntegration:
     @pytest.fixture
     def test_container(self, docker_client):
         """Create a test container for metrics collection"""
+        container_name = f"test-cgroup-metrics-{uuid.uuid4().hex[:8]}"
+
         # Use Alpine image with stress tool for generating load
         container = docker_client.containers.run(
             "alpine:latest",
             command="sh -c 'while true; do echo test; sleep 1; done'",
             detach=True,
             remove=True,
-            name="test-cgroup-metrics"
+            name=container_name
         )
         
         # Wait for container to start
@@ -267,7 +270,7 @@ class TestDockerIntegration:
         # Cleanup
         try:
             container.stop(timeout=1)
-        except:
+        except Exception:
             pass
     
     @pytest.mark.asyncio

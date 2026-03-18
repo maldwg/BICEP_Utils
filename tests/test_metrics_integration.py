@@ -16,6 +16,7 @@ import docker
 import time
 import asyncio
 import httpx
+import uuid
 from unittest.mock import AsyncMock, patch
 
 
@@ -40,13 +41,15 @@ class TestMetricsIntegrationWithDocker:
         Create a container with some CPU/memory load.
         Uses stress-ng to generate measurable resource usage.
         """
+        container_name = f"bicep-test-metrics-{uuid.uuid4().hex[:8]}"
+
         # Run Alpine with stress-ng
         container = docker_client.containers.run(
             "alpine:latest",
             command="sh -c 'apk add --no-cache stress-ng && stress-ng --cpu 1 --vm 1 --vm-bytes 100M --timeout 60s'",
             detach=True,
             remove=True,
-            name="bicep-test-metrics",
+            name=container_name,
             mem_limit="256m",
             cpu_quota=50000,  # 0.5 CPU cores
             cpu_period=100000
@@ -60,7 +63,7 @@ class TestMetricsIntegrationWithDocker:
         # Cleanup
         try:
             container.stop(timeout=2)
-        except:
+        except Exception:
             pass
     
     def test_docker_stats_baseline(self, stress_container):
@@ -82,7 +85,12 @@ class TestMetricsIntegrationWithDocker:
                       stats['precpu_stats']['system_cpu_usage']
         
         if system_delta > 0:
-            cpu_percent = (cpu_delta / system_delta) * len(stats['cpu_stats']['cpu_usage']['percpu_usage']) * 100
+            cpu_count = (
+                stats['cpu_stats'].get('online_cpus')
+                or len(stats['cpu_stats']['cpu_usage'].get('percpu_usage', []))
+                or 1
+            )
+            cpu_percent = (cpu_delta / system_delta) * cpu_count * 100
             print(f"\nDocker stats CPU: {cpu_percent:.2f}%")
             assert cpu_percent > 0, "Container should be using CPU"
         
