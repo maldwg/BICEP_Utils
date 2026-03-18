@@ -18,12 +18,12 @@ The IDS components are depending on the implementation of the interfaces provide
 
 The following solutions are either planned or already implemented
 
-
 | IDS Solution | Docker Image | GitHub Repository | Status |
 |-------------|-------------|------|--------|
 | Slips       | ![Slips-Image] | [Slips implementation](https://github.com/maldwg/BICEP-slips-image) | ✅ Available |
 | Suricata    | ![Suricata-Image] | [Suricata implementation](https://github.com/maldwg/BICEP-suricata-image) | ✅ Available |
 | Snort       | ![Snort-Image] | [Snort implementation](https://github.com/maldwg/BICEP-snort-image) |  ✅ Available  |
+| Hamstring       | ![Hamstring-Image] | [Hamstring implementation](https://github.com/maldwg/BICEP-Hamstring) | ⏳ Pending |
 
 
 
@@ -34,3 +34,4 @@ The following solutions are either planned or already implemented
 
 [Snort-Image]: https://img.shields.io/docker/v/maxldwg/bicep-snort/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
 
+[Hamstring-Image]: https://img.shields.io/badge/GHCR-ghcr.io%2Fmaldwg%2Fbicep--hamstring-2088FF?style=flat-square&logo=github
