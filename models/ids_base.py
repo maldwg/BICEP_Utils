@@ -1,19 +1,29 @@
 from abc import ABC, abstractmethod
-from ..general_utilities import stop_process
 from datetime import datetime
 import json
 from http.client import HTTPResponse
 import asyncio
 import httpx
-from ..general_utilities import (
-    LOGGER,
-    get_env_variable,
-    wait_for_process_completion,
-    create_and_activate_network_interface,
-    mirror_network_traffic_to_interface,
-    remove_network_interface,
-    stop_process,
-)
+try:
+    from ..general_utilities import (
+        LOGGER,
+        get_env_variable,
+        wait_for_process_completion,
+        create_and_activate_network_interface,
+        mirror_network_traffic_to_interface,
+        remove_network_interface,
+        stop_process,
+    )
+except ImportError:  # allow running as a top-level module in tests
+    from general_utilities import (
+        LOGGER,
+        get_env_variable,
+        wait_for_process_completion,
+        create_and_activate_network_interface,
+        mirror_network_traffic_to_interface,
+        remove_network_interface,
+        stop_process,
+    )
 import ast
 
 
