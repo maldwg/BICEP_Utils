@@ -445,7 +445,7 @@ class IDSBase(ABC):
 
         async with httpx.AsyncClient() as client:
             response: HTTPResponse = await client.post(
-                core_url + endpoint, data=json.dumps(data)
+                core_url + endpoint, json=data
             )
 
         # reset ensemble id after each analysis is completed to keep track if analysis has been triggered for ensemble or not
