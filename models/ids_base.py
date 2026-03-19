@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from ..general_utilities import stop_process
+from datetime import datetime
 import json
 from http.client import HTTPResponse
 import asyncio
@@ -11,7 +12,9 @@ from ..general_utilities import (
     create_and_activate_network_interface,
     mirror_network_traffic_to_interface,
     remove_network_interface,
+    stop_process,
 )
+import ast
 
 
 """
@@ -58,6 +61,28 @@ class Alert:
         self.type = type
         self.message = message
 
+    def __eq__(self, other):
+        if not isinstance(other, Alert):
+            return False
+        return (
+            self.time == other.time
+            and self.source_ip == other.source_ip
+            and self.source_port == other.source_port
+            and self.destination_ip == other.destination_ip
+            and self.destination_port == other.destination_port
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.time,
+                self.source_ip,
+                self.source_port,
+                self.destination_ip,
+                self.destination_port,
+            )
+        )
+
     @classmethod
     def from_json(cls, json_alert: str):
         """
@@ -69,11 +94,12 @@ class Alert:
         Returns:
             Alert: An instance of the Alert class.
         """
-        # replace none with null to be able to load from json
-        json_str = json_alert.replace("None", "null")
-        # replace single quotes with double quotes to be able to load it from json
-        json_str = json_str.replace("'", '"')
-        alert_dict = json.loads(json_str)
+
+        try:
+            alert_dict = ast.literal_eval(json_alert)
+        except Exception as e:
+            json_str = json_alert.replace("None", "null").replace("'", '"')
+            alert_dict = json.loads(json_str)
         return Alert(
             time=alert_dict["time"],
             source_ip=alert_dict["source_ip"],
@@ -183,6 +209,7 @@ class IDSBase(ABC):
     def __init__(
         self,
         container_id: int = None,
+        container_name: str = None,
         ensemble_id: int = None,
         pids: list[int] = [],
         dataset_id: int = None,
@@ -197,6 +224,7 @@ class IDSBase(ABC):
 
         Args:
             container_id (int): = None,
+            container_name (str): = None,
             ensemble_id (int): = None,
             pids (list[int]): = [],
             dataset_id (int): = None,
@@ -207,6 +235,7 @@ class IDSBase(ABC):
             metrics_collector: = None
         """
         self.container_id: int = container_id
+        self.container_name: str = container_name
         self.ensemble_id: int = ensemble_id
         self.pids: list[int] = pids
         # Id of the dataset used to trigger a static analysis
@@ -215,6 +244,8 @@ class IDSBase(ABC):
         self.send_alerts_periodically_task = send_alerts_periodically_task
         self.tap_interface_name: str = tap_interface_name
         self.background_tasks = background_tasks
+        self.analysis_start_time = None
+        self.analysis_stop_time = None
         self.metrics_collector = metrics_collector
 
     @property
@@ -293,10 +324,9 @@ class IDSBase(ABC):
         Stops all running IDS processes (static or network analysis tasks).
         """
         remove_process_ids = []
-        if self.pids != []:
-            for pid in self.pids:
-                await stop_process(pid)
-                remove_process_ids.append(pid)
+        for pid in self.pids:
+            await stop_process(pid)
+            remove_process_ids.append(pid)
         for removed_pid in remove_process_ids:
             self.pids.remove(removed_pid)
 
@@ -356,7 +386,9 @@ class IDSBase(ABC):
 
         # tell the core to stop/set status to idle again
         core_url = await get_env_variable("CORE_URL")
+        LOGGER.info("Begin parsing of alerts...")
         alerts: list[Alert] = await self.parser.parse_alerts()
+        LOGGER.info("Succesfully parsed all alerts")
         json_alerts = [a.to_dict() for a in alerts]
 
         data = {
@@ -365,6 +397,8 @@ class IDSBase(ABC):
             "alerts": json_alerts,
             "analysis_type": "static",
             "dataset_id": self.dataset_id,
+            "start_time": self.analysis_start_time,
+            "stop_time": self.analysis_stop_time,
         }
 
         async with httpx.AsyncClient() as client:
@@ -372,7 +406,7 @@ class IDSBase(ABC):
             response: HTTPResponse = await client.post(
                 core_url + endpoint, json=data, timeout=300
             )
-
+        LOGGER.info("Send all alerts to the core")
         # remove dataset here, becasue removing it in tell_core function removes the id before using it here otehrwise
         if self.dataset_id != None:
             self.dataset_id = None
@@ -407,6 +441,13 @@ class IDSBase(ABC):
         # reset ensemble id after each analysis is completed to keep track if analysis has been triggered for ensemble or not
         if self.ensemble_id != None:
             self.ensemble_id = None
+
+        if self.analysis_start_time != None:
+            self.analysis_start_time = None
+
+        if self.analysis_stop_time != None:
+            self.analysis_stop_time = None
+
         return response
 
     async def start_network_analysis(self) -> str:
@@ -468,9 +509,16 @@ class IDSBase(ABC):
         """
         pid = await self.execute_static_analysis_command(file_path)
         self.pids.append(pid)
-
+        self.analysis_start_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S.%f")
         await wait_for_process_completion(pid)
-        self.pids.remove(pid)
+        self.analysis_stop_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S.%f")
+        if pid in self.pids:
+            self.pids.remove(pid)
+        else:
+            print(
+                f"PID {pid} was already removed from pid list {self.pids} via another subprocess"
+            )
+        LOGGER.info(f"Process for static analysis finished")
         if self.static_analysis_running:
             task = asyncio.create_task(self.finish_static_analysis_in_background())
             self.background_tasks.add(task)

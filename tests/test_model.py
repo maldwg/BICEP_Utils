@@ -64,6 +64,7 @@ class MockIDS(IDSBase):
         async def execute_network_analysis_command(self):
             pid = 456
             return pid  
+        
 
 @pytest.fixture
 def mock_ids(mock_alert_list):
@@ -77,6 +78,24 @@ def mock_ids(mock_alert_list):
     mock.parser = mock_parser
 
     return mock
+
+@pytest.mark.asyncio
+async def test_alerts_from_json_with_double_quotes():
+    double_quoted_alerts = [
+        "{'time': '2017-07-07T12:17:48', 'source_ip': '192.168.10.15', 'source_port': '49820', 'destination_ip': '23.208.163.130', 'destination_port': '80', 'severity': 0.5, 'type': 'Unknown Traffic', 'message': \"(http_inspect) 'HTTP' in version field not all upper case\"}",
+        "{'time': '2017-07-04T12:29:11', 'source_ip': '192.168.10.14', 'source_port': '50205', 'destination_ip': '23.52.150.84', 'destination_port': '80', 'severity': 0.5, 'type': 'Unknown Traffic', 'message': \"(http_inspect) 'HTTP' in version field not all upper case\"}",  
+        "{'time': '2017-07-04T18:16:37', 'source_ip': '192.168.10.15', 'source_port': '57005', 'destination_ip': '23.66.190.240', 'destination_port': '80', 'severity': 0.5, 'type': 'Unknown Traffic', 'message': \"(http_inspect) 'HTTP' in version field not all upper case\"}",
+        "{'time': '2017-07-04T12:29:11', 'source_ip': '192.168.10.14', 'source_port': '50205', 'destination_ip': '23.52.150.84', 'destination_port': '80', 'severity': 0.5, 'type': 'NA', 'message': \"(http_inspect) 'HTTP' in version field not all upper case\"}",  
+        "{'time': '2017-07-05T11:55:25', 'source_ip': '192.168.10.25', 'source_port': '49223', 'destination_ip': '23.15.4.16', 'destination_port': '80', 'severity': 0.5, 'type': 'NA', 'message': \"(http_inspect) 'HTTP' in version field not all upper case\"}"
+    ]
+    parsed_alerts = []
+    for alert_string in double_quoted_alerts:
+        try:
+            parsed_alerts.append(Alert.from_json(alert_string))
+        except Exception as e:
+            print(f"Could not parse alert {alert_string}")
+            assert False
+    assert True
 
 @pytest.mark.asyncio
 @patch("BICEP_Utils.models.ids_base.get_env_variable", new_callable=AsyncMock)
