@@ -4,15 +4,26 @@ import json
 from http.client import HTTPResponse
 import asyncio
 import httpx
-from ..general_utilities import (
-    LOGGER,
-    get_env_variable,
-    wait_for_process_completion,
-    create_and_activate_network_interface,
-    mirror_network_traffic_to_interface,
-    remove_network_interface,
-    stop_process,
-)
+try:
+    from ..general_utilities import (
+        LOGGER,
+        get_env_variable,
+        wait_for_process_completion,
+        create_and_activate_network_interface,
+        mirror_network_traffic_to_interface,
+        remove_network_interface,
+        stop_process,
+    )
+except ImportError:  # allow running as a top-level module in tests
+    from general_utilities import (
+        LOGGER,
+        get_env_variable,
+        wait_for_process_completion,
+        create_and_activate_network_interface,
+        mirror_network_traffic_to_interface,
+        remove_network_interface,
+        stop_process,
+    )
 import ast
 
 
@@ -361,7 +372,7 @@ class IDSBase(ABC):
                     async with httpx.AsyncClient() as client:
                         # set timeout to 90 seconds to be able to send all alerts
                         response: HTTPResponse = await client.post(
-                            core_url + endpoint, data=json.dumps(data), timeout=90
+                            core_url + endpoint, json=data, timeout=90
                         )
                 except Exception as e:
                     LOGGER.error(
@@ -403,7 +414,7 @@ class IDSBase(ABC):
         async with httpx.AsyncClient() as client:
             # set timeout to 600, to be able to send all alerts
             response: HTTPResponse = await client.post(
-                core_url + endpoint, data=json.dumps(data), timeout=300
+                core_url + endpoint, json=data, timeout=300
             )
         LOGGER.info("Send all alerts to the core")
         # remove dataset here, becasue removing it in tell_core function removes the id before using it here otehrwise

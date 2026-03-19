@@ -26,6 +26,8 @@ from BICEP_Utils.models.ids_base import IDSBase
 def mock_ids():
     mock = AsyncMock(spec=IDSBase)
     mock.container_id = 1
+    mock.container_name = None
+    mock.metrics_collector = None
     mock.ensemble_id = None
     mock.configure = AsyncMock(return_value="Succesfully configured")
     mock.start_network_analysis = AsyncMock(return_value="Started Network Analysis")
@@ -44,7 +46,7 @@ async def test_healthcheck():
 async def test_configuration(save_file_mock, mock_ids):
     container_id = "1"
     mock_file = MagicMock(spec=UploadFile)
-    response = await configure(container_id=container_id,file=mock_file,ids=mock_ids)
+    response = await configure(container_id=container_id,container_name=mock_ids.container_name,file=mock_file,ids=mock_ids)
     response_json = json.loads(response.body.decode())
     assert response.status_code == 200
     assert response_json == {'message': mock_ids.configure.return_value}
@@ -53,7 +55,7 @@ async def test_configuration(save_file_mock, mock_ids):
 async def test_configuration_file_is_none(mock_ids):
     container_id="1"
     mock_file = None
-    response = await configure(container_id=container_id,file=mock_file,ids=mock_ids)
+    response = await configure(container_id=container_id,container_name=mock_ids.container_name,file=mock_file,ids=mock_ids)
     response_json = json.loads(response.body.decode())
     assert response.status_code == 400
     assert response_json == {"error": "No file provided"}

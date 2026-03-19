@@ -5,8 +5,12 @@ import logging
 import time
 from typing import Optional
 from pathlib import Path
-from .general_utilities import get_env_variable
-from .models.ids_base import IDSBase
+try:
+    from .general_utilities import get_env_variable
+    from .models.ids_base import IDSBase
+except ImportError:  # allow running as a top-level module in tests
+    from general_utilities import get_env_variable
+    from models.ids_base import IDSBase
 
 LOGGER = logging.getLogger(__name__)
 
