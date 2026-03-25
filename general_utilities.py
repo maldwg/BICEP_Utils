@@ -66,18 +66,7 @@ async def execute_command_async(
 
 async def normalize_timestamp_for_alert(timestamp_string: str):
     return parser.parse(timestamp_string).replace(tzinfo=None).replace(microsecond=0).isoformat()
-    
-def exececute_command_sync_in_seperate_thread(command, cwd):
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        # redirect stdout/error to prevent buffering issues
-        stdout=subprocess.DEVNULL,  
-        stderr=subprocess.DEVNULL, 
-        stdin=subprocess.DEVNULL,   
-        start_new_session=True      
-    )
-    return process.pid
+
 
 async def stop_process(pid: int):
     try:

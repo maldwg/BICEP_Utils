@@ -14,7 +14,6 @@ from BICEP_Utils.general_utilities import (
     mirror_network_traffic_to_interface,
     remove_network_interface,
     execute_command_async,
-    exececute_command_sync_in_seperate_thread
 )
 
 @pytest.fixture
@@ -54,26 +53,6 @@ async def test_execute_command_async(mock_subprocess):
     
     assert pid == 1234
     mock_subprocess.assert_called_once_with(*command, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL, stdin=asyncio.subprocess.DEVNULL)
-
-def test_execute_command_returns_valid_pid(tmp_path):
-    command = ["sleep", "3"]  
-    cwd = tmp_path
-
-    pid = exececute_command_sync_in_seperate_thread(command, cwd=str(cwd))
-
-    # Check that the PID is a positive integer
-    assert isinstance(pid, int)
-    assert pid > 0
-
-    time.sleep(0.1)  # Give it a moment to start
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        pytest.fail("Process terminated unexpectedly")
-
-    # Clean up the process
-    subprocess.run(["kill", str(pid)])
-
 
 @pytest.mark.asyncio
 @patch("psutil.Process")
