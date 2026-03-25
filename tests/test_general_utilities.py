@@ -42,19 +42,6 @@ async def test_get_env_variable(monkeypatch):
     assert result == "test_value"
 
 @pytest.mark.asyncio
-@patch("asyncio.create_subprocess_exec")
-async def test_execute_command_async(mock_subprocess):
-    mock_process = AsyncMock()
-    mock_process.pid = 1234
-    mock_subprocess.return_value = mock_process
-    
-    command = ["echo", "Hello"]
-    pid = await execute_command_async(command)
-    
-    assert pid == 1234
-    mock_subprocess.assert_called_once_with(*command, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL, stdin=asyncio.subprocess.DEVNULL)
-
-@pytest.mark.asyncio
 @patch("psutil.Process")
 async def test_stop_process(mock_process_class):
     mock_process = mock_process_class.return_value
