@@ -34,4 +34,4 @@ The following solutions are either planned or already implemented
 
 [Snort-Image]: https://img.shields.io/docker/v/maxldwg/bicep-snort/latest?style=flat-square&logo=docker&label=Latest%20Version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fmaxldwg%2Fbicep-suricata
 
-[Hamstring-Image]: https://img.shields.io/badge/GHCR-ghcr.io%2Fmaldwg%2Fbicep--hamstring-2088FF?style=flat-square&logo=github
+[Hamstring-Image]: https://ghcr-badge.egpl.dev/maldwg/bicep-hamstring/latest_tag?label=Latest%20Version
