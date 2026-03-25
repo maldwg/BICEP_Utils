@@ -37,17 +37,31 @@ async def save_dataset(dataset, path):
 async def get_env_variable(name: str):
     return os.getenv(name)
 
-async def execute_command_async(command):
+async def execute_command_async(
+    command,
+    cwd=None,
+    suppress_output: bool = True,
+    raise_on_error: bool = False,
+):
+    stdout = asyncio.subprocess.DEVNULL if suppress_output else None
+    stderr = asyncio.subprocess.DEVNULL if suppress_output else None
+    LOGGER.debug(
+        f"Starting async command: {command} (cwd={cwd}, suppress_output={suppress_output})"
+    )
     try:
         process = await asyncio.create_subprocess_exec(
             *command,
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL,
-            stdin=asyncio.subprocess.DEVNULL
+            cwd=cwd,
+            stdout=stdout,
+            stderr=stderr,
+            stdin=asyncio.subprocess.DEVNULL,
         )
+        LOGGER.debug(f"Started async command with pid {process.pid}: {command}")
         return process.pid
     except Exception as e:
-        print(e)
+        LOGGER.exception(f"Failed to start async command: {command}")
+        if raise_on_error:
+            raise
         return None
 
 async def normalize_timestamp_for_alert(timestamp_string: str):
