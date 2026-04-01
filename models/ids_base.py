@@ -396,9 +396,7 @@ class IDSBase(ABC):
 
         # tell the core to stop/set status to idle again
         core_url = await get_env_variable("CORE_URL")
-        LOGGER.info("Begin parsing of alerts...")
         alerts: list[Alert] = await self.parser.parse_alerts()
-        LOGGER.info("Succesfully parsed all alerts")
         json_alerts = [a.to_dict() for a in alerts]
 
         data = {
