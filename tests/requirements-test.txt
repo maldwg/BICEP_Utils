@@ -1,5 +1,4 @@
-# Test dependencies for cgroup metrics collector
+# Test dependencies
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-docker>=6.1.0
 httpx>=0.24.0
