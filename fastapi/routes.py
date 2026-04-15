@@ -9,7 +9,6 @@ from ..general_utilities import save_file, LOGGER
 from ..validation.models import NetworkAnalysisData
 import asyncio
 import shutil
-from ..cgroup_metrics_collector import start_cgroup_metrics_collector
 
 router = APIRouter()
 
@@ -33,15 +32,10 @@ async def configure(
     if file is None:
         return JSONResponse({"error": "No file provided"}, status_code=400)
 
-    # initialize container id variable to keep track which container is associated with the ids instance
-    if (
-        ids.container_id is None
-        or ids.container_name is None
-        or ids.metrics_collector is None
-    ):
+    # initialize container metadata once so the IDS instance can identify itself
+    if ids.container_id is None or ids.container_name is None:
         ids.container_id = int(container_id)
         ids.container_name = str(container_name)
-        ids.metrics_collector = await start_cgroup_metrics_collector(ids)
 
     temporary_file_path = "/tmp/temporary.txt"
     await save_file(file, temporary_file_path)

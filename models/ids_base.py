@@ -227,7 +227,6 @@ class IDSBase(ABC):
         send_alerts_periodically_task=None,
         tap_interface_name: str = None,
         background_tasks: set = set(),
-        metrics_collector=None,
     ):
         """
         Constructor of the IDSBase class
@@ -242,7 +241,6 @@ class IDSBase(ABC):
             send_alerts_periodically_task : = None,
             tap_interface_name (str): = None,
             background_tasks (set): = set(),
-            metrics_collector: = None
         """
         self.container_id: int = container_id
         self.container_name: str = container_name
@@ -256,7 +254,6 @@ class IDSBase(ABC):
         self.background_tasks = background_tasks
         self.analysis_start_time = None
         self.analysis_stop_time = None
-        self.metrics_collector = metrics_collector
 
     @property
     @abstractmethod

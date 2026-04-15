@@ -27,7 +27,6 @@ def mock_ids():
     mock = AsyncMock(spec=IDSBase)
     mock.container_id = 1
     mock.container_name = None
-    mock.metrics_collector = None
     mock.ensemble_id = None
     mock.configure = AsyncMock(return_value="Succesfully configured")
     mock.start_network_analysis = AsyncMock(return_value="Started Network Analysis")
