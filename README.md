@@ -23,7 +23,7 @@ The following solutions are either planned or already implemented
 | Slips       | ![Slips-Image] | [Slips implementation](https://github.com/maldwg/BICEP-slips-image) | ✅ Available |
 | Suricata    | ![Suricata-Image] | [Suricata implementation](https://github.com/maldwg/BICEP-suricata-image) | ✅ Available |
 | Snort       | ![Snort-Image] | [Snort implementation](https://github.com/maldwg/BICEP-snort-image) |  ✅ Available  |
-| Hamstring       | ![Hamstring-Image] | [Hamstring implementation](https://github.com/maldwg/BICEP-Hamstring) | ⏳ Pending |
+| Hamstring       | ![Hamstring-Image] | [Hamstring implementation](https://github.com/maldwg/BICEP-Hamstring) | ✅ Available |
 
 
 
